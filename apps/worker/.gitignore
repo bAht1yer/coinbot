@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+dist/
+
+# Env files
+.env
+#.env.example - keeping this if needed, but usually ignored
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+{
+  "name": "coinbase-bot-worker",
+  "version": "1.0.1",
+  "description": "Automated Coinbase trading bot worker",
+  "main": "dist/worker.js",
+  "scripts": {
+    "build": "tsc",
+    "postinstall": "prisma generate",
+    "start": "node dist/worker.js",
+    "start:prod": "node dist/worker.js",
+    "dev": "ts-node src/worker.ts"
+  },
+  "keywords": [
+    "coinbase",
+    "trading",
+    "bot",
+    "cryptocurrency"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@coinbot/db": "*",
+    "@prisma/client": "5.22.0",
+    "date-fns": "^4.1.0",
+    "jose": "^4.15.0",
+    "prisma": "5.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

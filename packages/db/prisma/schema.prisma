@@ -1,0 +1,240 @@
+// Prisma Schema for Coinbase Trading Bot
+// Professional Shadow Ledger with Risk Management
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------
+// 1. Bot Configuration (Global Remote Control)
+// --------------------------------------
+model BotConfig {
+  id              String   @id @default(uuid())
+  userId          String   // User who owns this config
+  pair            String   // e.g. "BTC-USD"
+  isActive        Boolean  @default(false) // Master switch
+  
+  // Risk control parameters
+  maxDailyLoss    Decimal  @default(50.0)  @db.Decimal(10, 2) // Max daily loss (USD)
+  maxPositionSize Decimal  @default(0.1)   @db.Decimal(10, 4) // Max position per trade
+  riskPerTrade    Decimal  @default(0.01)  @db.Decimal(5, 4)  // Risk per trade (1%)
+  stopLossPct     Decimal  @default(0.02)  @db.Decimal(5, 4)  // Stop Loss % (2%)
+  takeProfitPct   Decimal  @default(0.05)  @db.Decimal(5, 4)  // Take Profit % (5%)
+  
+  // Price Threshold Strategy
+  priceThresholdEnabled Boolean @default(true)
+  buyBelowPrice         Decimal @default(90000) @db.Decimal(12, 2)
+  sellAbovePrice        Decimal @default(110000) @db.Decimal(12, 2)
+  buyAmountUsd          Decimal @default(50) @db.Decimal(10, 2)
+  sellPercentage        Int     @default(50) // % of position to sell
+  
+  // Grid Buying (DCA)
+  gridBuyingEnabled Boolean @default(false)
+  gridDropPercent   Decimal @default(3) @db.Decimal(5, 2) // Drop % per layer
+  gridMaxLayers     Int     @default(3)
+  
+  // RSI Filter
+  rsiFilterEnabled Boolean @default(true)
+  rsiOversold      Int     @default(30) // Buy when RSI below this
+  
+  // Trailing Stop
+  trailingStopEnabled  Boolean @default(true)
+  trailingStopTrigger  Decimal @default(0.25) @db.Decimal(5, 4) // 25% profit trigger
+  trailingStopDistance Decimal @default(0.08) @db.Decimal(5, 4) // 8% trail distance
+  
+  // Trading parameters
+  strategy        String   @default("MOMENTUM")
+  interval        Int      @default(60000) // Check interval in ms
+  isPaperTrading  Boolean  @default(true)  // Safety first! Default to paper mode
+  cooldownMinutes Int      @default(5)     // Cooldown between trades
+  
+  // Session tracking
+  currentSessionId String?  // UUID generated when bot starts, null when stopped
+  
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  
+  @@unique([userId, pair]) // Each user can only have one config per pair
+  @@index([userId])
+  @@map("bot_config")
+}
+
+// --------------------------------------
+// 2. Trade Log (Shadow Ledger - Core Ledger)
+// --------------------------------------
+model TradeLog {
+  id               String   @id @default(uuid())
+  userId           String   // Owner of the trade
+  pair             String
+  side             String   // "BUY" | "SELL"
+  status           String   // "PENDING", "FILLED", "FAILED", "SKIPPED"
+  
+  // --- Expected Data (from CostEstimator) ---
+  expectedPrice    Decimal   @db.Decimal(12, 2)
+  expectedQuantity Decimal   @db.Decimal(12, 8)
+  expectedFee      Decimal   @db.Decimal(10, 2)
+  expectedSlippage Decimal   @db.Decimal(10, 2)
+  expectedCost     Decimal   @db.Decimal(12, 2)
+  breakEvenPrice   Decimal   @db.Decimal(12, 2)
+  
+  // --- Actual Data (from Coinbase API callback) ---
+  executionPrice   Decimal?  @db.Decimal(12, 2)
+  executionFee     Decimal?  @db.Decimal(10, 2)
+  filledSize       Decimal?  @db.Decimal(12, 8)
+  actualCost       Decimal?  @db.Decimal(12, 2)
+  
+  // Order IDs (for idempotency)
+  clientOrderId    String   @unique // Prevent duplicate orders
+  exchangeOrderId  String?
+  
+  // --- Settlement Data ---
+  realizedPnL      Decimal?  @db.Decimal(10, 2) // Only for closed positions
+  exitReason       String?   // "TAKE_PROFIT", "STOP_LOSS", "SIGNAL_FLIP", "MANUAL"
+  
+  // Metadata
+  strategy         String?
+  notes            String?
+  sessionId        String?  // Session this trade belongs to
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Indexes for fast queries (daily loss calculation)
+  @@index([createdAt, status])
+  @@index([pair, status])
+  @@index([userId])
+  @@index([clientOrderId])
+  @@map("trade_log")
+}
+
+// --------------------------------------
+// 3. NextAuth.js User Authentication
+// --------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  
+  accounts       Account[]
+  sessions       Session[]
+  apiCredentials ApiCredentials?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --------------------------------------
+// 4. User API Credentials (Dashboard-Managed)
+// --------------------------------------
+model ApiCredentials {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Coinbase API Credentials (encrypted in application layer)
+  apiKeyId        String
+  apiKeySecret    String   // Stored encrypted
+  
+  // Metadata
+  label           String?  @default("My API Key")
+  isActive        Boolean  @default(true)
+  lastUsed        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("api_credentials")
+}
+
+// --------------------------------------
+// 4. System Logs (Worker -> Dashboard)
+// --------------------------------------
+model SystemLog {
+  id        String   @id @default(cuid())
+  userId    String?  // Optional: associate logs with a user (null = system-wide)
+  timestamp DateTime @default(now())
+  level     String   @default("info") // info, warn, error, success
+  source    String   @default("worker") // worker, system, trade
+  message   String
+  sessionId String?  // Session this log belongs to
+  
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@map("system_logs")
+}
+
+// --------------------------------------
+// 5. Active Position (Grid DCA + Trailing Stop State)
+// --------------------------------------
+model ActivePosition {
+  id              String   @id @default(uuid())
+  userId          String
+  pair            String   // e.g. "BTC-USDC"
+  
+  // Position info
+  quantity        Decimal  @db.Decimal(12, 8) // Current holding
+  avgEntryPrice   Decimal  @db.Decimal(12, 2) // Weighted average
+  
+  // Trailing Stop State
+  highestPrice    Decimal  @default(0) @db.Decimal(12, 2) // Track peak for trail
+  trailingActive  Boolean  @default(false) // True when profit > trigger%
+  
+  // Grid DCA State
+  gridLayer       Int      @default(0)  // Current grid layer (0 = initial, 1+ = DCA layers)
+  gridBasePrice   Decimal  @default(0) @db.Decimal(12, 2) // Price at layer 0
+
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  
+  @@unique([userId, pair]) // One active position per user per pair
+  @@map("active_positions")
+}
