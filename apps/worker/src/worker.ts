@@ -8,7 +8,7 @@
  * 4. Logging trades to the database with userId
  */
 
-import { Prisma } from '@prisma/client';
+import { Decimal } from '@coinbot/db';
 import { prisma } from './lib/prisma';
 import { executionEngine } from './executionEngine';
 import { riskManager } from './RiskManager';
@@ -60,28 +60,28 @@ async function processUserTrade(
     config: {
         pair: string;
         strategy: string;
-        maxPositionSize: Prisma.Decimal;
+        maxPositionSize: Decimal;
         interval: number;
         isPaperTrading: boolean;
-        stopLossPct: Prisma.Decimal;
-        takeProfitPct: Prisma.Decimal;
+        stopLossPct: Decimal;
+        takeProfitPct: Decimal;
         // Price Threshold
         priceThresholdEnabled: boolean;
-        buyBelowPrice: Prisma.Decimal;
-        sellAbovePrice: Prisma.Decimal;
-        buyAmountUsd: Prisma.Decimal;
+        buyBelowPrice: Decimal;
+        sellAbovePrice: Decimal;
+        buyAmountUsd: Decimal;
         sellPercentage: number;
         // Grid
         gridBuyingEnabled: boolean;
-        gridDropPercent: Prisma.Decimal;
+        gridDropPercent: Decimal;
         gridMaxLayers: number;
         // RSI
         rsiFilterEnabled: boolean;
         rsiOversold: number;
         // Trailing Stop
         trailingStopEnabled: boolean;
-        trailingStopTrigger: Prisma.Decimal;
-        trailingStopDistance: Prisma.Decimal;
+        trailingStopTrigger: Decimal;
+        trailingStopDistance: Decimal;
         // Other
         cooldownMinutes: number;
         // Session
@@ -176,17 +176,17 @@ async function processUserTrade(
                             pair: PAIR,
                             side: 'SELL',
                             status: 'FILLED',
-                            expectedPrice: new Prisma.Decimal(sellPrice),
-                            expectedQuantity: new Prisma.Decimal(sellQty),
-                            expectedFee: new Prisma.Decimal(estimatedFee),
-                            expectedSlippage: new Prisma.Decimal(0),
-                            expectedCost: new Prisma.Decimal(totalSellValue),
-                            breakEvenPrice: new Prisma.Decimal(avgEntryPrice),
-                            executionPrice: new Prisma.Decimal(sellPrice),
-                            executionFee: new Prisma.Decimal(estimatedFee),
-                            filledSize: new Prisma.Decimal(sellQty),
-                            actualCost: new Prisma.Decimal(totalSellValue),
-                            realizedPnL: new Prisma.Decimal(realizedPnL),
+                            expectedPrice: new Decimal(sellPrice),
+                            expectedQuantity: new Decimal(sellQty),
+                            expectedFee: new Decimal(estimatedFee),
+                            expectedSlippage: new Decimal(0),
+                            expectedCost: new Decimal(totalSellValue),
+                            breakEvenPrice: new Decimal(avgEntryPrice),
+                            executionPrice: new Decimal(sellPrice),
+                            executionFee: new Decimal(estimatedFee),
+                            filledSize: new Decimal(sellQty),
+                            actualCost: new Decimal(totalSellValue),
+                            realizedPnL: new Decimal(realizedPnL),
                             clientOrderId: crypto.randomUUID(),
                             strategy: config.strategy,
                             notes: `${manageResult.reason} | Entry: $${avgEntryPrice.toFixed(2)} | P/L: ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`,
@@ -217,12 +217,12 @@ async function processUserTrade(
                             data: {
                                 userId,
                                 pair: PAIR,
-                                quantity: new Prisma.Decimal(balance.total),
-                                avgEntryPrice: new Prisma.Decimal(avgEntryPrice),
-                                highestPrice: new Prisma.Decimal(currentPrice),
+                                quantity: new Decimal(balance.total),
+                                avgEntryPrice: new Decimal(avgEntryPrice),
+                                highestPrice: new Decimal(currentPrice),
                                 trailingActive: false,
                                 gridLayer: 0,
-                                gridBasePrice: new Prisma.Decimal(avgEntryPrice),
+                                gridBasePrice: new Decimal(avgEntryPrice),
                             },
                         });
                     }
@@ -234,7 +234,7 @@ async function processUserTrade(
                     if (currentPrice > highestPrice) {
                         await prisma.activePosition.update({
                             where: { userId_pair: { userId, pair: PAIR } },
-                            data: { highestPrice: new Prisma.Decimal(currentPrice) },
+                            data: { highestPrice: new Decimal(currentPrice) },
                         });
                     }
 
@@ -242,7 +242,7 @@ async function processUserTrade(
                     if (profitPct >= triggerPct && !trailingActive) {
                         await prisma.activePosition.update({
                             where: { userId_pair: { userId, pair: PAIR } },
-                            data: { trailingActive: true, highestPrice: new Prisma.Decimal(currentPrice) },
+                            data: { trailingActive: true, highestPrice: new Decimal(currentPrice) },
                         });
                         await logger.infoForUser(userId, `📈 TRAILING STOP ACTIVATED at +${profitPct.toFixed(1)}%! Highest: $${currentPrice.toFixed(2)}`);
                     }
@@ -274,17 +274,17 @@ async function processUserTrade(
                                         pair: PAIR,
                                         side: 'SELL',
                                         status: 'FILLED',
-                                        expectedPrice: new Prisma.Decimal(sellPrice),
-                                        expectedQuantity: new Prisma.Decimal(sellQty),
-                                        expectedFee: new Prisma.Decimal(estimatedFee),
-                                        expectedSlippage: new Prisma.Decimal(0),
-                                        expectedCost: new Prisma.Decimal(totalSellValue),
-                                        breakEvenPrice: new Prisma.Decimal(avgEntryPrice),
-                                        executionPrice: new Prisma.Decimal(sellPrice),
-                                        executionFee: new Prisma.Decimal(estimatedFee),
-                                        filledSize: new Prisma.Decimal(sellQty),
-                                        actualCost: new Prisma.Decimal(totalSellValue),
-                                        realizedPnL: new Prisma.Decimal(realizedPnL),
+                                        expectedPrice: new Decimal(sellPrice),
+                                        expectedQuantity: new Decimal(sellQty),
+                                        expectedFee: new Decimal(estimatedFee),
+                                        expectedSlippage: new Decimal(0),
+                                        expectedCost: new Decimal(totalSellValue),
+                                        breakEvenPrice: new Decimal(avgEntryPrice),
+                                        executionPrice: new Decimal(sellPrice),
+                                        executionFee: new Decimal(estimatedFee),
+                                        filledSize: new Decimal(sellQty),
+                                        actualCost: new Decimal(totalSellValue),
+                                        realizedPnL: new Decimal(realizedPnL),
                                         clientOrderId: crypto.randomUUID(),
                                         strategy: 'TRAILING_STOP',
                                         notes: `Trailing Stop (${dropFromHigh.toFixed(1)}% drop from $${highestPrice.toFixed(2)}) | Entry: $${avgEntryPrice.toFixed(2)} | P/L: ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%`,
@@ -395,17 +395,17 @@ async function processUserTrade(
                     side: tradeResult.action,
                     status: 'FILLED',
 
-                    expectedPrice: new Prisma.Decimal(tradeResult.price),
-                    expectedQuantity: new Prisma.Decimal(tradeResult.amount),
-                    expectedFee: new Prisma.Decimal(tradeResult.fee),
-                    expectedSlippage: new Prisma.Decimal(0),
-                    expectedCost: new Prisma.Decimal(tradeResult.totalCost),
-                    breakEvenPrice: new Prisma.Decimal(tradeResult.costBreakdown?.breakEvenPrice || tradeResult.price),
+                    expectedPrice: new Decimal(tradeResult.price),
+                    expectedQuantity: new Decimal(tradeResult.amount),
+                    expectedFee: new Decimal(tradeResult.fee),
+                    expectedSlippage: new Decimal(0),
+                    expectedCost: new Decimal(tradeResult.totalCost),
+                    breakEvenPrice: new Decimal(tradeResult.costBreakdown?.breakEvenPrice || tradeResult.price),
 
-                    executionPrice: new Prisma.Decimal(tradeResult.price),
-                    executionFee: new Prisma.Decimal(tradeResult.fee),
-                    filledSize: new Prisma.Decimal(tradeResult.amount),
-                    actualCost: new Prisma.Decimal(tradeResult.totalCost),
+                    executionPrice: new Decimal(tradeResult.price),
+                    executionFee: new Decimal(tradeResult.fee),
+                    filledSize: new Decimal(tradeResult.amount),
+                    actualCost: new Decimal(tradeResult.totalCost),
 
                     clientOrderId,
                     strategy: config.strategy,

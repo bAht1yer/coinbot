@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Decimal } from '@coinbot/db';
 import { rateLimit } from '@/lib/rate-limit';
 
 // Utility to get IP for rate limiting
 function getIP(req: NextRequest): string {
-    return req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+    return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+        || req.headers.get('x-real-ip')
+        || '127.0.0.1';
 }
 
 // GET: Fetch current user's bot config
@@ -119,27 +121,27 @@ export async function PATCH(request: Request) {
                         // DO NOT touch isActive or currentSessionId!
                         ...(isPaperTrading !== undefined && { isPaperTrading }),
                         // Risk
-                        ...(maxDailyLoss !== undefined && { maxDailyLoss: new Prisma.Decimal(maxDailyLoss) }),
-                        ...(maxPositionSize !== undefined && { maxPositionSize: new Prisma.Decimal(maxPositionSize) }),
-                        ...(stopLossPct !== undefined && { stopLossPct: new Prisma.Decimal(stopLossPct / 100) }),
-                        ...(takeProfitPct !== undefined && { takeProfitPct: new Prisma.Decimal(takeProfitPct / 100) }),
+                        ...(maxDailyLoss !== undefined && { maxDailyLoss: new Decimal(maxDailyLoss) }),
+                        ...(maxPositionSize !== undefined && { maxPositionSize: new Decimal(maxPositionSize) }),
+                        ...(stopLossPct !== undefined && { stopLossPct: new Decimal(stopLossPct / 100) }),
+                        ...(takeProfitPct !== undefined && { takeProfitPct: new Decimal(takeProfitPct / 100) }),
                         // Strategy
                         ...(priceThresholdEnabled !== undefined && { priceThresholdEnabled }),
-                        ...(buyBelowPrice !== undefined && { buyBelowPrice: new Prisma.Decimal(buyBelowPrice) }),
-                        ...(sellAbovePrice !== undefined && { sellAbovePrice: new Prisma.Decimal(sellAbovePrice) }),
-                        ...(buyAmountUsd !== undefined && { buyAmountUsd: new Prisma.Decimal(buyAmountUsd) }),
+                        ...(buyBelowPrice !== undefined && { buyBelowPrice: new Decimal(buyBelowPrice) }),
+                        ...(sellAbovePrice !== undefined && { sellAbovePrice: new Decimal(sellAbovePrice) }),
+                        ...(buyAmountUsd !== undefined && { buyAmountUsd: new Decimal(buyAmountUsd) }),
                         ...(sellPercentage !== undefined && { sellPercentage }),
                         // Grid
                         ...(gridBuyingEnabled !== undefined && { gridBuyingEnabled }),
-                        ...(gridDropPercent !== undefined && { gridDropPercent: new Prisma.Decimal(gridDropPercent) }),
+                        ...(gridDropPercent !== undefined && { gridDropPercent: new Decimal(gridDropPercent) }),
                         ...(gridMaxLayers !== undefined && { gridMaxLayers }),
                         // RSI
                         ...(rsiFilterEnabled !== undefined && { rsiFilterEnabled }),
                         ...(rsiOversold !== undefined && { rsiOversold }),
                         // Trailing Stop
                         ...(trailingStopEnabled !== undefined && { trailingStopEnabled }),
-                        ...(trailingStopTrigger !== undefined && { trailingStopTrigger: new Prisma.Decimal(trailingStopTrigger / 100) }),
-                        ...(trailingStopDistance !== undefined && { trailingStopDistance: new Prisma.Decimal(trailingStopDistance / 100) }),
+                        ...(trailingStopTrigger !== undefined && { trailingStopTrigger: new Decimal(trailingStopTrigger / 100) }),
+                        ...(trailingStopDistance !== undefined && { trailingStopDistance: new Decimal(trailingStopDistance / 100) }),
                         // Other
                         ...(cooldownMinutes !== undefined && { cooldownMinutes }),
                     },
@@ -161,9 +163,9 @@ export async function PATCH(request: Request) {
                         isActive: false, // ← CRITICAL: New configs are INACTIVE by default
                         currentSessionId: null,
                         isPaperTrading: isPaperTrading ?? true,
-                        maxDailyLoss: new Prisma.Decimal(maxDailyLoss ?? 50.0),
-                        maxPositionSize: new Prisma.Decimal(maxPositionSize ?? 0.01),
-                        riskPerTrade: new Prisma.Decimal(0.01),
+                        maxDailyLoss: new Decimal(maxDailyLoss ?? 50.0),
+                        maxPositionSize: new Decimal(maxPositionSize ?? 0.01),
+                        riskPerTrade: new Decimal(0.01),
                         strategy: 'MOMENTUM',
                         interval: 15000, // 15 seconds - Coinbase allows 15 req/s
                     },
@@ -205,27 +207,27 @@ export async function PATCH(request: Request) {
                     currentSessionId: newSessionId,
                     ...(isPaperTrading !== undefined && { isPaperTrading }),
                     // Risk
-                    ...(maxDailyLoss !== undefined && { maxDailyLoss: new Prisma.Decimal(maxDailyLoss) }),
-                    ...(maxPositionSize !== undefined && { maxPositionSize: new Prisma.Decimal(maxPositionSize) }),
-                    ...(stopLossPct !== undefined && { stopLossPct: new Prisma.Decimal(stopLossPct / 100) }),
-                    ...(takeProfitPct !== undefined && { takeProfitPct: new Prisma.Decimal(takeProfitPct / 100) }),
+                    ...(maxDailyLoss !== undefined && { maxDailyLoss: new Decimal(maxDailyLoss) }),
+                    ...(maxPositionSize !== undefined && { maxPositionSize: new Decimal(maxPositionSize) }),
+                    ...(stopLossPct !== undefined && { stopLossPct: new Decimal(stopLossPct / 100) }),
+                    ...(takeProfitPct !== undefined && { takeProfitPct: new Decimal(takeProfitPct / 100) }),
                     // Strategy
                     ...(priceThresholdEnabled !== undefined && { priceThresholdEnabled }),
-                    ...(buyBelowPrice !== undefined && { buyBelowPrice: new Prisma.Decimal(buyBelowPrice) }),
-                    ...(sellAbovePrice !== undefined && { sellAbovePrice: new Prisma.Decimal(sellAbovePrice) }),
-                    ...(buyAmountUsd !== undefined && { buyAmountUsd: new Prisma.Decimal(buyAmountUsd) }),
+                    ...(buyBelowPrice !== undefined && { buyBelowPrice: new Decimal(buyBelowPrice) }),
+                    ...(sellAbovePrice !== undefined && { sellAbovePrice: new Decimal(sellAbovePrice) }),
+                    ...(buyAmountUsd !== undefined && { buyAmountUsd: new Decimal(buyAmountUsd) }),
                     ...(sellPercentage !== undefined && { sellPercentage }),
                     // Grid
                     ...(gridBuyingEnabled !== undefined && { gridBuyingEnabled }),
-                    ...(gridDropPercent !== undefined && { gridDropPercent: new Prisma.Decimal(gridDropPercent) }),
+                    ...(gridDropPercent !== undefined && { gridDropPercent: new Decimal(gridDropPercent) }),
                     ...(gridMaxLayers !== undefined && { gridMaxLayers }),
                     // RSI
                     ...(rsiFilterEnabled !== undefined && { rsiFilterEnabled }),
                     ...(rsiOversold !== undefined && { rsiOversold }),
                     // Trailing Stop
                     ...(trailingStopEnabled !== undefined && { trailingStopEnabled }),
-                    ...(trailingStopTrigger !== undefined && { trailingStopTrigger: new Prisma.Decimal(trailingStopTrigger / 100) }),
-                    ...(trailingStopDistance !== undefined && { trailingStopDistance: new Prisma.Decimal(trailingStopDistance / 100) }),
+                    ...(trailingStopTrigger !== undefined && { trailingStopTrigger: new Decimal(trailingStopTrigger / 100) }),
+                    ...(trailingStopDistance !== undefined && { trailingStopDistance: new Decimal(trailingStopDistance / 100) }),
                     // Other
                     ...(cooldownMinutes !== undefined && { cooldownMinutes }),
                 },
@@ -239,9 +241,9 @@ export async function PATCH(request: Request) {
                     isActive: true,
                     currentSessionId: newSessionId,
                     isPaperTrading: isPaperTrading ?? true, // Default to paper mode
-                    maxDailyLoss: new Prisma.Decimal(maxDailyLoss ?? 50.0),
-                    maxPositionSize: new Prisma.Decimal(maxPositionSize ?? 0.01),
-                    riskPerTrade: new Prisma.Decimal(0.01),
+                    maxDailyLoss: new Decimal(maxDailyLoss ?? 50.0),
+                    maxPositionSize: new Decimal(maxPositionSize ?? 0.01),
+                    riskPerTrade: new Decimal(0.01),
                     strategy: 'MOMENTUM',
                     interval: 15000, // 15 seconds - Coinbase allows 15 req/s
                 },
