@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate --schema=../../packages/db/prisma/schema.prisma && next build",
-    "postinstall": "prisma generate --schema=../../packages/db/prisma/schema.prisma",
+    "build": "npx prisma generate --schema=../../packages/db/prisma/schema.prisma && next build",
+    "postinstall": "npx prisma generate --schema=../../packages/db/prisma/schema.prisma",
     "start": "next start",
     "lint": "eslint"
   },
