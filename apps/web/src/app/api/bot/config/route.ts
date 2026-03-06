@@ -67,7 +67,7 @@ export async function PATCH(request: Request) {
             // Risk
             maxDailyLoss, maxPositionSize, stopLossPct, takeProfitPct,
             // Strategy
-            priceThresholdEnabled, buyBelowPrice, sellAbovePrice, buyAmountUsd, sellPercentage,
+            priceThresholdEnabled, buyBelowPrice, sellAbovePrice, buyAmountUsd, maxPositionUsd, sellPercentage,
             // Grid
             gridBuyingEnabled, gridDropPercent, gridMaxLayers,
             // RSI
@@ -130,6 +130,7 @@ export async function PATCH(request: Request) {
                         ...(buyBelowPrice !== undefined && { buyBelowPrice: new Decimal(buyBelowPrice) }),
                         ...(sellAbovePrice !== undefined && { sellAbovePrice: new Decimal(sellAbovePrice) }),
                         ...(buyAmountUsd !== undefined && { buyAmountUsd: new Decimal(buyAmountUsd) }),
+                        ...(maxPositionUsd !== undefined && { maxPositionUsd: new Decimal(maxPositionUsd) }),
                         ...(sellPercentage !== undefined && { sellPercentage }),
                         // Grid
                         ...(gridBuyingEnabled !== undefined && { gridBuyingEnabled }),
@@ -216,6 +217,7 @@ export async function PATCH(request: Request) {
                     ...(buyBelowPrice !== undefined && { buyBelowPrice: new Decimal(buyBelowPrice) }),
                     ...(sellAbovePrice !== undefined && { sellAbovePrice: new Decimal(sellAbovePrice) }),
                     ...(buyAmountUsd !== undefined && { buyAmountUsd: new Decimal(buyAmountUsd) }),
+                    ...(maxPositionUsd !== undefined && { maxPositionUsd: new Decimal(maxPositionUsd) }),
                     ...(sellPercentage !== undefined && { sellPercentage }),
                     // Grid
                     ...(gridBuyingEnabled !== undefined && { gridBuyingEnabled }),

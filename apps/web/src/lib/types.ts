@@ -103,6 +103,7 @@ export interface TradingSettings {
     buyBelowPrice: number;
     sellAbovePrice: number;
     buyAmountUsd: number;
+    maxPositionUsd: number;
     sellPercentage: number;
 
     // Grid buying
@@ -186,6 +187,7 @@ export const DEFAULT_SETTINGS: TradingSettings = {
     buyBelowPrice: 90000,
     sellAbovePrice: 110000,
     buyAmountUsd: 50,
+    maxPositionUsd: 500,
     sellPercentage: 50,
 
     gridBuyingEnabled: false,

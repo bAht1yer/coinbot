@@ -11,11 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SUPPORTED_PRODUCTS } from '@/lib/types';
 import { motion } from 'framer-motion';
 
-import { Settings, Shield, Cpu, Save, Loader2 } from 'lucide-react';
+import { Settings, Shield, Cpu } from 'lucide-react';
 
 export function SettingsPanel() {
     const { settings, updateSettings } = useTradingStore();
-    const [isSaving, setIsSaving] = useState(false);
+    const [, setIsSaving] = useState(false);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedRef = useRef<string>('');
 
@@ -37,6 +37,7 @@ export function SettingsPanel() {
                     buyBelowPrice: settings.buyBelowPrice,
                     sellAbovePrice: settings.sellAbovePrice,
                     buyAmountUsd: settings.buyAmountUsd,
+                    maxPositionUsd: settings.maxPositionUsd,
                     sellPercentage: settings.sellPercentage,
                     // Grid
                     gridBuyingEnabled: settings.gridBuyingEnabled,
@@ -158,15 +159,25 @@ export function SettingsPanel() {
                         </div>
                     )}
 
-                    {/* Buy Amount */}
-                    <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider text-zinc-400">Buy Amount (USD)</Label>
-                        <Input
-                            type="number"
-                            value={settings.buyAmountUsd}
-                            onChange={(e) => updateSettings({ buyAmountUsd: parseFloat(e.target.value) })}
-                            className="bg-black/50 border-white/10 text-white focus:border-neon-cyan/50 font-mono"
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider text-zinc-400">Buy Amount (USD)</Label>
+                            <Input
+                                type="number"
+                                value={settings.buyAmountUsd}
+                                onChange={(e) => updateSettings({ buyAmountUsd: parseFloat(e.target.value) })}
+                                className="bg-black/50 border-white/10 text-white focus:border-neon-cyan/50 font-mono"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider text-zinc-400">Max Position (USD)</Label>
+                            <Input
+                                type="number"
+                                value={settings.maxPositionUsd}
+                                onChange={(e) => updateSettings({ maxPositionUsd: parseFloat(e.target.value) })}
+                                className="bg-black/50 border-white/10 text-white focus:border-neon-cyan/50 font-mono"
+                            />
+                        </div>
                     </div>
 
                     {/* RSI Filter */}

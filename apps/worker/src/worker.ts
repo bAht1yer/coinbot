@@ -70,6 +70,7 @@ async function processUserTrade(
         buyBelowPrice: Decimal;
         sellAbovePrice: Decimal;
         buyAmountUsd: Decimal;
+        maxPositionUsd: Decimal;
         sellPercentage: number;
         // Grid
         gridBuyingEnabled: boolean;
@@ -341,6 +342,8 @@ async function processUserTrade(
                         strategy: 'GRID_DCA',
                         riskLevel: 'MEDIUM',
                         maxTradeSize: dcaAmount,
+                        maxPositionUsd: config.maxPositionUsd.toNumber(),
+                        sellPercentage: config.sellPercentage,
                         stopLoss: config.stopLossPct.toNumber(),
                         takeProfit: config.takeProfitPct.toNumber(),
                         isPaperTrading: config.isPaperTrading,
@@ -380,6 +383,8 @@ async function processUserTrade(
             strategy: config.strategy,
             riskLevel: 'MEDIUM',
             maxTradeSize: maxTradeSize,
+            maxPositionUsd: config.maxPositionUsd.toNumber(),
+            sellPercentage: config.sellPercentage,
             stopLoss: config.stopLossPct.toNumber(),
             takeProfit: config.takeProfitPct.toNumber(),
             isPaperTrading: config.isPaperTrading,
@@ -481,6 +486,7 @@ async function startBot(): Promise<void> {
                     buyBelowPrice: config.buyBelowPrice,
                     sellAbovePrice: config.sellAbovePrice,
                     buyAmountUsd: config.buyAmountUsd,
+                    maxPositionUsd: config.maxPositionUsd,
                     sellPercentage: config.sellPercentage,
                     // Grid
                     gridBuyingEnabled: config.gridBuyingEnabled,

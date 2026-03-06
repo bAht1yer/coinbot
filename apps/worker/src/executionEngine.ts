@@ -16,6 +16,8 @@ interface TradeConfig {
     strategy: string;
     riskLevel: string;
     maxTradeSize: number;
+    maxPositionUsd?: number;
+    sellPercentage?: number;
     stopLoss: number;
     takeProfit: number;
     isPaperTrading: boolean;
@@ -71,7 +73,59 @@ export const executionEngine = {
         }
 
         // 4. Calculate trade size in base currency
-        const quantity = maxTradeSize / currentPrice;
+        let quantity = maxTradeSize / currentPrice;
+
+        if (signal.action === 'BUY') {
+            const quoteAsset = symbol.split('-')[1]; // e.g., USD
+            const quoteBalance = await coinbaseTrader.getAssetBalance(quoteAsset, userId);
+
+            // Limit buy size to available USD balance (leave 1% for potential fees)
+            const maxAffordableBuy = (quoteBalance.available * 0.99) / currentPrice;
+            if (quantity > maxAffordableBuy) {
+                quantity = maxAffordableBuy;
+                if (quantity > 0) {
+                    await logger.warnForUser(userId, `Wallet balance low: Reducing BUY size to $${(quantity * currentPrice).toFixed(2)}`);
+                }
+            }
+
+            // Check max position constraint
+            if (config.maxPositionUsd) {
+                const baseAsset = symbol.split('-')[0];
+                const baseBalance = await coinbaseTrader.getAssetBalance(baseAsset, userId);
+                const currentPositionUsd = baseBalance.total * currentPrice;
+
+                if (currentPositionUsd >= config.maxPositionUsd) {
+                    await logger.infoForUser(userId, `⏸️ Max Position Reached: ${baseBalance.total.toFixed(6)} ${baseAsset} (~$${currentPositionUsd.toFixed(2)}) >= $${config.maxPositionUsd}. Skipping BUY.`);
+                    return null;
+                }
+
+                const remainingSpaceUsd = config.maxPositionUsd - currentPositionUsd;
+                const remainingSpaceQty = remainingSpaceUsd / currentPrice;
+                if (quantity > remainingSpaceQty) {
+                    quantity = remainingSpaceQty;
+                    await logger.warnForUser(userId, `Max position constraint: Reducing BUY size to $${Math.max(0, quantity * currentPrice).toFixed(2)}`);
+                }
+            }
+        } else if (signal.action === 'SELL') {
+            const baseAsset = symbol.split('-')[0];
+            const baseBalance = await coinbaseTrader.getAssetBalance(baseAsset, userId);
+
+            // Sell a percentage of the available balance
+            const sellPct = (config.sellPercentage || 100) / 100;
+            quantity = baseBalance.available * sellPct;
+
+            if (quantity <= 0) {
+                await logger.warnForUser(userId, `No ${baseAsset} balance available to sell. Skipping trades.`);
+                return null;
+            }
+        }
+
+        // If effective quantity is too small ($2 equivalent)
+        if (quantity * currentPrice < 2) {
+            await logger.warnForUser(userId, `Trade size too small after limits ($${(quantity * currentPrice).toFixed(2)}). Skipping trade.`);
+            return null;
+        }
+
         const normalizedQty = costEstimator.normalizeQuantity(symbol, quantity);
 
         await logger.infoForUser(userId, `Signal: ${signal.action} ${normalizedQty} ${symbol.split('-')[0]}`);

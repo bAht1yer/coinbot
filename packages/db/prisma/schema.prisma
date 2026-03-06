@@ -32,6 +32,7 @@ model BotConfig {
   buyBelowPrice         Decimal @default(90000) @db.Decimal(12, 2)
   sellAbovePrice        Decimal @default(110000) @db.Decimal(12, 2)
   buyAmountUsd          Decimal @default(50) @db.Decimal(10, 2)
+  maxPositionUsd        Decimal @default(500) @db.Decimal(10, 2) // Max position cap
   sellPercentage        Int     @default(50) // % of position to sell
   
   // Grid Buying (DCA)
