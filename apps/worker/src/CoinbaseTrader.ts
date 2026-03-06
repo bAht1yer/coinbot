@@ -60,8 +60,15 @@ function decrypt(encryptedData: string): string {
  * Get current user's cached credentials
  */
 function getCachedCredentials(userId?: string): { keyId: string; privateKey: string } | null {
-    if (!userId) return null;
-    return credentialCache.get(userId) || null;
+    if (!userId) {
+        logger.warn('[CoinbaseTrader] getCachedCredentials called without userId');
+        return null;
+    }
+    const creds = credentialCache.get(userId);
+    if (!creds) {
+        logger.warn(`[CoinbaseTrader] No credentials in cache for userId: ${userId}`);
+    }
+    return creds || null;
 }
 
 /**
@@ -131,9 +138,10 @@ async function apiRequest<T>(
     body?: object,
     userId?: string
 ): Promise<T> {
+    logger.info(`[CoinbaseTrader] API Request: ${method} ${endpoint} for userId: ${userId || 'undefined'}`);
     const credentials = await loadCredentials(userId);
     if (!credentials) {
-        throw new Error('No API credentials available');
+        throw new Error(`No API credentials available for user ${userId || 'undefined'}`);
     }
 
     const path = API_VERSION + endpoint;
