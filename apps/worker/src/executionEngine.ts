@@ -51,7 +51,7 @@ export const executionEngine = {
         await logger.infoForUser(userId, `Analyzing ${symbol} with ${strategy} strategy... ${isPaperTrading ? '(PAPER)' : '(LIVE)'}`);
 
         // 1. Fetch real-time market data
-        const currentPrice = await marketDataService.getCurrentPrice(symbol);
+        const currentPrice = await marketDataService.getCurrentPrice(symbol, userId);
         if (!currentPrice) {
             await logger.errorForUser(userId, `Failed to fetch price for ${symbol}`);
             return null;
@@ -142,10 +142,10 @@ Break-Even: $${costBreakdown.breakEvenPrice.toFixed(2)} (${costBreakdown.breakEv
      * Returns trading signal based on RSI strategy
      */
     async analyzeMarket(currentPrice: number, config: TradeConfig): Promise<TradeSignal> {
-        const { symbol, strategy } = config;
+        const { symbol, strategy, userId } = config;
 
         // Fetch recent prices for RSI calculation
-        const prices = await marketDataService.getRecentPrices(symbol, 20);
+        const prices = await marketDataService.getRecentPrices(symbol, 20, userId);
 
         if (prices.length < 15) {
             logger.info(`[Strategy] Insufficient price data for ${symbol}`);
@@ -168,7 +168,7 @@ Break-Even: $${costBreakdown.breakEvenPrice.toFixed(2)} (${costBreakdown.breakEv
 
             // Fetch HOURLY prices for EMA200 (200 hours = ~8 days of trend data)
             // This doesn't affect trade frequency - EMA is just for trend context
-            const longPrices = await marketDataService.getRecentPricesHourly(symbol, 210);
+            const longPrices = await marketDataService.getRecentPricesHourly(symbol, 210, userId);
             const ema200 = marketDataService.calculateEMA(longPrices, 200);
 
             // Trend Check: Only allow BUY if price > EMA200 (Uptrend)
@@ -298,7 +298,7 @@ Break-Even: $${costBreakdown.breakEvenPrice.toFixed(2)} (${costBreakdown.breakEv
         }
 
         // CASE 2: Live trading - MUST have valid credentials
-        const hasCredentials = await coinbaseTrader.hasCredentials();
+        const hasCredentials = await coinbaseTrader.hasCredentials(userId);
 
         if (!hasCredentials) {
             // CRITICAL: Do NOT silently succeed! This is a real failure.
@@ -319,10 +319,10 @@ Break-Even: $${costBreakdown.breakEvenPrice.toFixed(2)} (${costBreakdown.breakEv
         if (side === 'BUY') {
             // For BUY, we specify USD amount (quote_size)
             const usdAmount = quantity * price;
-            result = await coinbaseTrader.placeMarketBuy(symbol, usdAmount);
+            result = await coinbaseTrader.placeMarketBuy(symbol, usdAmount, userId);
         } else {
             // For SELL, we specify asset amount (base_size)
-            result = await coinbaseTrader.placeMarketSell(symbol, quantity);
+            result = await coinbaseTrader.placeMarketSell(symbol, quantity, userId);
         }
 
         if (result.success) {

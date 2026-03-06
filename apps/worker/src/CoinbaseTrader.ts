@@ -15,9 +15,6 @@ const API_VERSION = '/api/v3/brokerage';
 // Per-user credential cache (prevents mixing credentials in multi-user environment)
 const credentialCache = new Map<string, { keyId: string; privateKey: string }>();
 
-// Current active userId for API calls
-let currentUserId: string | null = null;
-
 /**
  * Decryption function (must match encryption in web app)
  */
@@ -62,16 +59,16 @@ function decrypt(encryptedData: string): string {
 /**
  * Get current user's cached credentials
  */
-function getCachedCredentials(): { keyId: string; privateKey: string } | null {
-    if (!currentUserId) return null;
-    return credentialCache.get(currentUserId) || null;
+function getCachedCredentials(userId?: string): { keyId: string; privateKey: string } | null {
+    if (!userId) return null;
+    return credentialCache.get(userId) || null;
 }
 
 /**
  * Load API credentials from database for current user
  */
-async function loadCredentials(): Promise<{ keyId: string; privateKey: string } | null> {
-    const cached = getCachedCredentials();
+async function loadCredentials(userId?: string): Promise<{ keyId: string; privateKey: string } | null> {
+    const cached = getCachedCredentials(userId);
     if (cached) return cached;
     return null; // Use loadCredentialsForUser instead
 }
@@ -131,9 +128,10 @@ async function generateJwt(
 async function apiRequest<T>(
     method: string,
     endpoint: string,
-    body?: object
+    body?: object,
+    userId?: string
 ): Promise<T> {
-    const credentials = await loadCredentials();
+    const credentials = await loadCredentials(userId);
     if (!credentials) {
         throw new Error('No API credentials available');
     }
@@ -169,8 +167,8 @@ export const coinbaseTrader = {
     /**
      * Check if credentials are available
      */
-    async hasCredentials(): Promise<boolean> {
-        const creds = await loadCredentials();
+    async hasCredentials(userId?: string): Promise<boolean> {
+        const creds = await loadCredentials(userId);
         return creds !== null;
     },
 
@@ -179,7 +177,7 @@ export const coinbaseTrader = {
      * @param productId - e.g., "BTC-USD"
      * @param quoteAmount - USD amount to spend
      */
-    async placeMarketBuy(productId: string, quoteAmount: number): Promise<{
+    async placeMarketBuy(productId: string, quoteAmount: number, userId?: string): Promise<{
         success: boolean;
         orderId?: string;
         error?: string;
@@ -198,7 +196,7 @@ export const coinbaseTrader = {
                         quote_size: quoteAmount.toFixed(2),
                     },
                 },
-            });
+            }, userId);
 
             logger.info(`[CoinbaseTrader] BUY order placed: ${result.order_id || clientOrderId}`);
 
@@ -220,7 +218,7 @@ export const coinbaseTrader = {
      * @param productId - e.g., "BTC-USD"
      * @param baseAmount - Amount of base currency to sell
      */
-    async placeMarketSell(productId: string, baseAmount: number): Promise<{
+    async placeMarketSell(productId: string, baseAmount: number, userId?: string): Promise<{
         success: boolean;
         orderId?: string;
         error?: string;
@@ -239,7 +237,7 @@ export const coinbaseTrader = {
                         base_size: baseAmount.toFixed(8),
                     },
                 },
-            });
+            }, userId);
 
             logger.info(`[CoinbaseTrader] SELL order placed: ${result.order_id || clientOrderId}`);
 
@@ -259,9 +257,9 @@ export const coinbaseTrader = {
     /**
      * Get account balances
      */
-    async getAccounts(): Promise<any[]> {
+    async getAccounts(userId?: string): Promise<any[]> {
         try {
-            const result = await apiRequest<{ accounts: any[] }>('GET', '/accounts');
+            const result = await apiRequest<{ accounts: any[] }>('GET', '/accounts', undefined, userId);
             return result.accounts;
         } catch (error) {
             logger.error(`[CoinbaseTrader] Failed to get accounts: ${error}`);
@@ -273,9 +271,9 @@ export const coinbaseTrader = {
      * Get balance for a specific asset (e.g., BTC, ETH)
      * Returns { available: number, total: number }
      */
-    async getAssetBalance(asset: string): Promise<{ available: number; total: number }> {
+    async getAssetBalance(asset: string, userId?: string): Promise<{ available: number; total: number }> {
         try {
-            const accounts = await this.getAccounts();
+            const accounts = await this.getAccounts(userId);
             const account = accounts.find(a => a.currency === asset);
 
             if (!account) {
@@ -299,11 +297,13 @@ export const coinbaseTrader = {
      * Get product price (for USDC pairs that need authenticated API)
      * Uses Brokerage API: GET /products/{product_id}
      */
-    async getProductPrice(productId: string): Promise<number | null> {
+    async getProductPrice(productId: string, userId?: string): Promise<number | null> {
         try {
             const result = await apiRequest<{ price: string; price_percentage_change_24h: string }>(
                 'GET',
-                `/products/${productId}`
+                `/products/${productId}`,
+                undefined,
+                userId
             );
             return result.price ? parseFloat(result.price) : null;
         } catch (error) {
@@ -316,7 +316,7 @@ export const coinbaseTrader = {
      * Get product candles for RSI calculation (authenticated API)
      * Uses Brokerage API: GET /products/{product_id}/candles
      */
-    async getProductCandles(productId: string, granularity = 'FIFTEEN_MINUTE', limit = 20): Promise<number[]> {
+    async getProductCandles(productId: string, granularity = 'FIFTEEN_MINUTE', limit = 20, userId?: string): Promise<number[]> {
         try {
             // Map granularity to seconds for time calculation
             const granularitySeconds: Record<string, number> = {
@@ -334,7 +334,9 @@ export const coinbaseTrader = {
 
             const result = await apiRequest<{ candles: Array<{ close: string }> }>(
                 'GET',
-                `/products/${productId}/candles?granularity=${granularity}&start=${start}&end=${end}`
+                `/products/${productId}/candles?granularity=${granularity}&start=${start}&end=${end}`,
+                undefined,
+                userId
             );
 
             // Extract closing prices, reverse to oldest-first
@@ -358,7 +360,6 @@ export const coinbaseTrader = {
         try {
             // Check cache first
             if (credentialCache.has(userId)) {
-                currentUserId = userId;
                 return true;
             }
 
@@ -368,7 +369,6 @@ export const coinbaseTrader = {
 
             if (!credentials) {
                 logger.warn(`[CoinbaseTrader] No credentials found for user ${userId.slice(0, 8)}`);
-                currentUserId = null;
                 return false;
             }
 
@@ -380,13 +380,11 @@ export const coinbaseTrader = {
                 keyId: credentials.apiKeyId,
                 privateKey,
             });
-            currentUserId = userId;
 
             logger.info(`[CoinbaseTrader] Loaded credentials for user ${userId.slice(0, 8)}: ${credentials.apiKeyId.slice(0, 8)}...`);
             return true;
         } catch (error) {
             logger.error(`[CoinbaseTrader] Failed to load credentials for user ${userId}: ${error}`);
-            currentUserId = null;
             return false;
         }
     },
@@ -400,6 +398,5 @@ export const coinbaseTrader = {
         } else {
             credentialCache.clear();
         }
-        currentUserId = null;
     },
 };

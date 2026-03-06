@@ -32,15 +32,15 @@ export class MarketDataService {
      * Fetch current ticker price
      * Uses authenticated API for USDC pairs, public API for USD pairs
      */
-    async getCurrentPrice(symbol: string): Promise<number | null> {
+    async getCurrentPrice(symbol: string, userId?: string): Promise<number | null> {
         // For USDC pairs, use authenticated Brokerage API
         if (this.isUsdcPair(symbol)) {
-            const hasCredentials = await coinbaseTrader.hasCredentials();
+            const hasCredentials = await coinbaseTrader.hasCredentials(userId);
             if (!hasCredentials) {
                 logger.error(`[MarketData] USDC pair ${symbol} requires API credentials`);
                 return null;
             }
-            return await coinbaseTrader.getProductPrice(symbol);
+            return await coinbaseTrader.getProductPrice(symbol, userId);
         }
 
         // For USD pairs, use public Exchange API
@@ -72,15 +72,15 @@ export class MarketDataService {
      * Returns array of closing prices (oldest to newest)
      * Uses authenticated API for USDC pairs
      */
-    async getRecentPrices(symbol: string, count = 20): Promise<number[]> {
+    async getRecentPrices(symbol: string, count = 20, userId?: string): Promise<number[]> {
         // For USDC pairs, use authenticated Brokerage API
         if (this.isUsdcPair(symbol)) {
-            const hasCredentials = await coinbaseTrader.hasCredentials();
+            const hasCredentials = await coinbaseTrader.hasCredentials(userId);
             if (!hasCredentials) {
                 logger.error(`[MarketData] USDC pair ${symbol} requires API credentials for candles`);
                 return [];
             }
-            return await coinbaseTrader.getProductCandles(symbol, 'FIFTEEN_MINUTE', count);
+            return await coinbaseTrader.getProductCandles(symbol, 'FIFTEEN_MINUTE', count, userId);
         }
 
         // For USD pairs, use public Exchange API
@@ -123,15 +123,15 @@ export class MarketDataService {
      * EMA200 needs 200+ data points - using 1H candles to cover 200+ hours (~8 days)
      * This doesn't affect trade frequency - EMA is just for trend context
      */
-    async getRecentPricesHourly(symbol: string, count = 210): Promise<number[]> {
+    async getRecentPricesHourly(symbol: string, count = 210, userId?: string): Promise<number[]> {
         // For USDC pairs, use authenticated Brokerage API
         if (this.isUsdcPair(symbol)) {
-            const hasCredentials = await coinbaseTrader.hasCredentials();
+            const hasCredentials = await coinbaseTrader.hasCredentials(userId);
             if (!hasCredentials) {
                 logger.error(`[MarketData] USDC pair ${symbol} requires API credentials for hourly candles`);
                 return [];
             }
-            return await coinbaseTrader.getProductCandles(symbol, 'ONE_HOUR', count);
+            return await coinbaseTrader.getProductCandles(symbol, 'ONE_HOUR', count, userId);
         }
 
         // For USD pairs, use public Exchange API

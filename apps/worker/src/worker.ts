@@ -101,6 +101,13 @@ async function processUserTrade(
             return;
         }
 
+        // 0. LOAD CREDENTIALS into cache for this user (CRITICAL for multi-user support)
+        const credsLoaded = await coinbaseTrader.loadCredentialsForUser(userId);
+        if (!credsLoaded) {
+            await logger.errorForUser(userId, `Failed to load API credentials - skipping cycle`);
+            return;
+        }
+
         // Log for this user
         await logger.infoForUser(userId, `Running trading cycle for ${PAIR}...`);
 
@@ -113,8 +120,8 @@ async function processUserTrade(
 
         // --- NEW: Position Management (SL/TP Check) ---
         const baseAsset = PAIR.split('-')[0]; // e.g., "BTC" from "BTC-USDC"
-        const balance = await coinbaseTrader.getAssetBalance(baseAsset);
-        const currentPrice = await marketDataService.getCurrentPrice(PAIR);
+        const balance = await coinbaseTrader.getAssetBalance(baseAsset, userId);
+        const currentPrice = await marketDataService.getCurrentPrice(PAIR, userId);
 
         if (currentPrice && balance.total > 0) {
             const positionValue = balance.total * currentPrice;
