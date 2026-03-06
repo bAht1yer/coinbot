@@ -12,6 +12,7 @@
         "build:web": "npm run build --workspace=apps/web",
         "build:worker": "npm run build --workspace=apps/worker",
         "build:db": "npm run build --workspace=@coinbot/db",
+        "start:prod": "npm run start:prod --workspace=apps/worker",
         "db:generate": "npx prisma generate --schema=packages/db/prisma/schema.prisma",
         "db:push": "npx prisma db push --schema=packages/db/prisma/schema.prisma"
     }
