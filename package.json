@@ -15,5 +15,12 @@
         "start:prod": "npm run start:prod --workspace=apps/worker",
         "db:generate": "npx prisma generate --schema=packages/db/prisma/schema.prisma",
         "db:push": "npx prisma db push --schema=packages/db/prisma/schema.prisma"
+    },
+    "devDependencies": {
+        "@tailwindcss/node": "4.0.6",
+        "@tailwindcss/postcss": "4.0.6",
+        "lightningcss": "1.30.2",
+        "postcss": "8.4.31",
+        "tailwindcss": "4.0.6"
     }
 }
