@@ -2,7 +2,8 @@
     "name": "@coinbot/db",
     "version": "1.0.0",
     "private": true,
-    "main": "index.ts",
+    "main": "index.js",
+    "types": "index.d.ts",
     "scripts": {
         "build": "tsc",
         "generate": "prisma generate"

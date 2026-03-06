@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.prisma = void 0;
+exports.Decimal = exports.prisma = void 0;
 const client_1 = require("@prisma/client");
 const globalForPrisma = globalThis;
 exports.prisma = globalForPrisma.prisma ??
@@ -24,3 +24,5 @@ exports.prisma = globalForPrisma.prisma ??
 if (process.env.NODE_ENV !== 'production')
     globalForPrisma.prisma = exports.prisma;
 __exportStar(require("@prisma/client"), exports);
+var library_1 = require("@prisma/client/runtime/library");
+Object.defineProperty(exports, "Decimal", { enumerable: true, get: function () { return library_1.Decimal; } });

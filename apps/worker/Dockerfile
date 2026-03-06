@@ -23,6 +23,9 @@ RUN npm ci --workspace=apps/worker --workspace=packages/db --include-workspace-r
 # Generate Prisma Client
 RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
 
+# Build the DB package (TypeScript -> JavaScript)
+RUN npm run build --workspace=@coinbot/db
+
 # Copy worker source code and compile TypeScript
 COPY apps/worker/tsconfig.json ./apps/worker/
 COPY apps/worker/src ./apps/worker/src/
@@ -50,7 +53,8 @@ COPY packages/db/package.json ./packages/db/
 
 # Copy Prisma schema (needed for prisma generate in postinstall)
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
-COPY --from=builder /app/packages/db/index.ts ./packages/db/
+COPY --from=builder /app/packages/db/index.js ./packages/db/
+COPY --from=builder /app/packages/db/index.d.ts ./packages/db/
 COPY --from=builder /app/packages/db/tsconfig.json ./packages/db/
 
 # Install ONLY production dependencies
