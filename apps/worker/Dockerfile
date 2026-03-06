@@ -80,4 +80,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "console.log('healthy')" || exit 1
 
 # Run migrations at RUNTIME, then start bot
-CMD ["npm", "run", "start:prod", "--workspace=apps/worker"]
+CMD ["sh", "-c", "npx prisma db push --schema=packages/db/prisma/schema.prisma --accept-data-loss && npm run start:prod --workspace=apps/worker"]
